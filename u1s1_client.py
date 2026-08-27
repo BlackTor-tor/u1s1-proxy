@@ -114,6 +114,21 @@ def save_settings(settings: dict) -> None:
         print(f"保存配置失败: {e}")
 
 
+# ---------- 官方客户端 Key 自动读取 ----------
+def _official_config_path() -> Path:
+    """u1s1 官方客户端配置路径（Key 的固定读取位置）。"""
+    return Path.home() / ".u1s1" / "config.json"
+
+
+def load_official_key() -> str:
+    """从官方客户端配置 ~/.u1s1/config.json 读取 apiKey；缺失/损坏返回空串。"""
+    try:
+        data = json.loads(_official_config_path().read_text("utf-8"))
+        return str(data.get("apiKey") or "").strip()
+    except Exception:  # noqa: BLE001 - 文件缺失/损坏一律视为无 Key
+        return ""
+
+
 class ProxyController:
     """在后台线程里运行 u1s1_proxy 的 ThreadingHTTPServer。"""
 
@@ -170,6 +185,7 @@ class App:
         self.log_q: queue.Queue[str] = queue.Queue()
         self.proxy = ProxyController(self.log)
         self.cfg = load_settings()
+        self.official_key = load_official_key()
 
         root.title("u1s1 便携版客户端")
         root.geometry("720x620")
@@ -195,10 +211,10 @@ class App:
         row = ttk.Frame(api)
         row.pack(fill="x", pady=2)
         ttk.Label(row, text="API Key:").pack(side="left")
-        self.key_var = tk.StringVar(value=self.cfg.get("key") or "")
+        self.key_var = tk.StringVar(value=self.cfg.get("key") or self.official_key)
         ttk.Entry(row, textvariable=self.key_var, width=40, show="*").pack(side="left", padx=6)
         ttk.Button(row, text="验证", command=self.on_verify).pack(side="left")
-        ttk.Label(row, text="（自行填写，不内置）", foreground="#6e7781").pack(side="left", padx=6)
+        ttk.Label(row, text="（默认自动读取官方配置）", foreground="#6e7781").pack(side="left", padx=6)
 
         row = ttk.Frame(api)
         row.pack(fill="x", pady=2)
@@ -229,7 +245,7 @@ class App:
         row = ttk.Frame(prx)
         row.pack(fill="x", pady=2)
         ttk.Label(row, text="API Key:").pack(side="left")
-        self.proxy_key_var = tk.StringVar(value=self.cfg.get("proxy_key") or "")
+        self.proxy_key_var = tk.StringVar(value=self.cfg.get("proxy_key") or self.official_key)
         ttk.Entry(row, textvariable=self.proxy_key_var, width=32, show="*").pack(side="left", padx=6)
         ttk.Label(row, text="（可选，转发时自动带上游鉴权）", foreground="#6e7781").pack(side="left", padx=6)
 
@@ -259,7 +275,11 @@ class App:
 
         self._refresh_thirdparty_info()
         self.log("u1s1 便携版客户端已启动")
-        self.log(f"API: {DEFAULT_API}（Key 自行填写，不内置、保存于本机配置文件）")
+        if self.official_key:
+            self.log("API Key: 已自动读取官方配置（~/.u1s1/config.json）")
+        else:
+            self.log("API Key: 未检测到官方配置（~/.u1s1/config.json），请手动填写")
+        self.log(f"API: {DEFAULT_API}")
         self.log(f"代理: http://{DEFAULT_HOST}:{DEFAULT_PORT} -> {DEFAULT_UPSTREAM}")
 
     # ---------- 日志 ----------

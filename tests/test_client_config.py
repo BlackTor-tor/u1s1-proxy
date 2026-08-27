@@ -1,5 +1,8 @@
-"""u1s1_client 掩码助手与代理控制器接线的单测。"""
+"""u1s1_client 掩码助手、官方 Key 读取与代理控制器接线的单测。"""
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 import u1s1_client
 import u1s1_proxy
@@ -40,6 +43,29 @@ class ControllerAuthTest(unittest.TestCase):
         finally:
             ctl.stop()
             u1s1_proxy.U1S1ProxyHandler.authorization = ""
+
+
+class OfficialKeyLoaderTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._orig = u1s1_client._official_config_path
+        u1s1_client._official_config_path = lambda: Path(self._tmp.name) / "config.json"
+
+    def tearDown(self):
+        u1s1_client._official_config_path = self._orig
+        self._tmp.cleanup()
+
+    def test_reads_api_key(self):
+        Path(self._tmp.name, "config.json").write_text(
+            json.dumps({"apiKey": "u1s1-test-key-1234"}), "utf-8")
+        self.assertEqual(u1s1_client.load_official_key(), "u1s1-test-key-1234")
+
+    def test_missing_file_returns_empty(self):
+        self.assertEqual(u1s1_client.load_official_key(), "")
+
+    def test_corrupt_file_returns_empty(self):
+        Path(self._tmp.name, "config.json").write_text("{broken", "utf-8")
+        self.assertEqual(u1s1_client.load_official_key(), "")
 
 
 if __name__ == "__main__":
