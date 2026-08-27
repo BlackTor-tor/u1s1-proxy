@@ -195,7 +195,7 @@ def _mask_key(key: str) -> str:
         return "（未填写）"
     if len(key) <= 8:
         return key[:2] + "…"
-    return key[:6] + "…" + key[-4:]
+    return key[:7] + "…" + key[-4:]
 ```
 
 - [ ] **Step 4: 运行确认通过**
