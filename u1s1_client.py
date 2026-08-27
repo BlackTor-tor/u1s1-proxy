@@ -222,11 +222,19 @@ class App:
         ttk.Label(row, text="监听端口:").pack(side="left")
         self.port_var = tk.StringVar(value=self.cfg.get("port") or str(DEFAULT_PORT))
         ttk.Entry(row, textvariable=self.port_var, width=8).pack(side="left", padx=6)
-        ttk.Label(row, text="上游:").pack(side="left")
+        ttk.Label(row, text="Base URL:").pack(side="left")
         self.upstream_var = tk.StringVar(value=self.cfg.get("upstream") or DEFAULT_UPSTREAM)
         ttk.Entry(row, textvariable=self.upstream_var, width=32).pack(side="left", padx=6)
+
+        row = ttk.Frame(prx)
+        row.pack(fill="x", pady=2)
+        ttk.Label(row, text="API Key:").pack(side="left")
+        self.proxy_key_var = tk.StringVar(value=self.cfg.get("proxy_key") or "")
+        ttk.Entry(row, textvariable=self.proxy_key_var, width=32, show="*").pack(side="left", padx=6)
+        ttk.Label(row, text="（可选，转发时自动带上游鉴权）", foreground="#6e7781").pack(side="left", padx=6)
+
         self.port_var.trace_add("write", lambda *_: self._refresh_thirdparty_info())
-        self.key_var.trace_add("write", lambda *_: self._refresh_thirdparty_info())
+        self.proxy_key_var.trace_add("write", lambda *_: self._refresh_thirdparty_info())
 
         row = ttk.Frame(prx)
         row.pack(fill="x", pady=2)
@@ -342,11 +350,12 @@ class App:
             self.log("端口格式错误")
             return
         upstream = self.upstream_var.get().strip() or DEFAULT_UPSTREAM
-        self.log(f"正在启动代理: 127.0.0.1:{port} -> {upstream} ...")
-        threading.Thread(target=self._start_worker, args=(port, upstream), daemon=True).start()
+        proxy_key = self.proxy_key_var.get().strip()
+        self.log(f"正在启动代理: 127.0.0.1:{port} -> {upstream}（Key: {_mask_key(proxy_key)}）...")
+        threading.Thread(target=self._start_worker, args=(port, upstream, proxy_key), daemon=True).start()
 
-    def _start_worker(self, port: int, upstream: str) -> None:
-        msg = self.proxy.start(DEFAULT_HOST, port, upstream)
+    def _start_worker(self, port: int, upstream: str, proxy_key: str) -> None:
+        msg = self.proxy.start(DEFAULT_HOST, port, upstream, proxy_key)
         self.log(msg)
         self.root.after(0, self._refresh_proxy_buttons)
 
@@ -369,9 +378,9 @@ class App:
         """实时显示第三方工具需要填写的 Base URL / API Key。"""
         port = self.port_var.get().strip() or str(DEFAULT_PORT)
         base = f"http://127.0.0.1:{port}/v1"
-        key = self.key_var.get().strip()
-        shown = (key[:10] + "…") if key else "（未填写）"
-        self.third_var.set(f"第三方工具填入 → Base URL: {base}    API Key: {shown}")
+        key = self.proxy_key_var.get().strip()
+        hint = "任意（代理自动带真实 Key）" if key else "需在工具中配置"
+        self.third_var.set(f"第三方工具填入 → Base URL: {base}    API Key: {hint}")
 
     def _save_settings(self) -> None:
         save_settings({
@@ -379,6 +388,7 @@ class App:
             "key": self.key_var.get().strip(),
             "port": self.port_var.get().strip(),
             "upstream": self.upstream_var.get().strip(),
+            "proxy_key": self.proxy_key_var.get().strip(),
         })
 
     def _on_close(self) -> None:
