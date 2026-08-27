@@ -127,7 +127,7 @@ class ProxyController:
     def running(self) -> bool:
         return self._server is not None
 
-    def start(self, host: str, port: int, upstream: str) -> str:
+    def start(self, host: str, port: int, upstream: str, api_key: str = "") -> str:
         with self._lock:
             if self._server is not None:
                 return "代理已在运行"
@@ -141,12 +141,14 @@ class ProxyController:
             u1s1_proxy.U1S1ProxyHandler.upstream_scheme = scheme
             u1s1_proxy.U1S1ProxyHandler.upstream_host = uhost
             u1s1_proxy.U1S1ProxyHandler.upstream_port = uport
+            u1s1_proxy.U1S1ProxyHandler.authorization = f"Bearer {api_key}" if api_key else ""
 
             server = u1s1_proxy.ThreadingHTTPServer((host, port), u1s1_proxy.U1S1ProxyHandler)
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             self._server, self._thread = server, thread
-            return f"代理已启动: http://{host}:{port} -> {scheme}://{uhost}:{uport}"
+            suffix = f"（Key: {_mask_key(api_key)}）" if api_key else ""
+            return f"代理已启动: http://{host}:{port} -> {scheme}://{uhost}:{uport}{suffix}"
 
     def stop(self) -> str:
         with self._lock:
