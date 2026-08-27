@@ -4,10 +4,6 @@
 
 零第三方依赖，仅用 Python 标准库（Python 3.8+），单文件实现。
 
-## 为什么单独建目录，而不是并入 atomcode-proxy
-
-`atomcode-proxy` 是「OpenAI/Anthropic 协议 → AtomCode 本地 daemon」的协议翻译适配代理，自带状态页/设置页、托盘、daemon 生命周期管理、PyInstaller 打包，职责高度聚焦。u1s1 反代是另一个站点的通用 HTTP 反向代理，两者目的、配置、生命周期完全不同，混在一起会污染原项目的打包与配置边界，因此单独放在本目录。
-
 ## 快速开始
 
 ### 方式一：便携版 exe（推荐，Windows）
