@@ -222,7 +222,7 @@ class App:
         ttk.Label(row, text="监听端口:").pack(side="left")
         self.port_var = tk.StringVar(value=self.cfg.get("port") or str(DEFAULT_PORT))
         ttk.Entry(row, textvariable=self.port_var, width=8).pack(side="left", padx=6)
-        ttk.Label(row, text="Base URL:").pack(side="left")
+        ttk.Label(row, text="上游地址:").pack(side="left")
         self.upstream_var = tk.StringVar(value=self.cfg.get("upstream") or DEFAULT_UPSTREAM)
         ttk.Entry(row, textvariable=self.upstream_var, width=32).pack(side="left", padx=6)
 
