@@ -17,3 +17,17 @@ u1s1-client.json
 
 # 本地 agent 配置
 .atomcode/
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+
+# 系统文件
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# 临时文件
+*.tmp
+*~
